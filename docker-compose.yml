@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17
+    container_name: aerohub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aerohub
+      POSTGRES_PASSWORD: aerohub_dev_pw
+      POSTGRES_DB: aerohub
+    ports:
+      - "5544:5432"
+    volumes:
+      - aerohub-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aerohub -d aerohub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  aerohub-data:
