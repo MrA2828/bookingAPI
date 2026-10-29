@@ -17,8 +17,8 @@ public class ReferenceDataController(ISender sender) : ControllerBase
 {
     [HttpGet("airlines")]
     [EndpointSummary("Searches airlines by name or IATA/ICAO code")]
-    public async Task<IActionResult> Airlines([FromQuery] string? search, [FromQuery] int limit = 20, [FromQuery] int offset = 0, CancellationToken ct = default) =>
-        Ok(await sender.Send(new SearchAirlinesQuery(search, limit, offset), ct));
+    public async Task<IActionResult> Airlines([FromQuery] string? search, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default) =>
+        Ok(await sender.Send(new SearchAirlinesQuery(search, pageNumber, pageSize), ct));
 
     [HttpGet("countries")]
     [EndpointSummary("Lists all countries (ISO code, name, continent)")]

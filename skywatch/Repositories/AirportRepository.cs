@@ -10,8 +10,9 @@ public class AirportRepository(AppDbContext db) : IAirportRepository
 
     public void Add(Airport airport) => db.Airports.Add(airport);
 
-    public async Task<IReadOnlyList<Airport>> SearchAsync(string? search, string? country, string? type, int limit, int offset, CancellationToken ct)
+    public async Task<IReadOnlyList<Airport>> SearchAsync(string? search, string? country, string? type, int pageNumber, int pageSize, CancellationToken ct)
     {
+        var skip = (pageNumber - 1) * pageSize;
         var query = db.Airports.AsNoTracking().Where(a => a.IsActive);
 
         if (!string.IsNullOrWhiteSpace(country))
@@ -38,13 +39,13 @@ public class AirportRepository(AppDbContext db) : IAirportRepository
                 .OrderBy(a => a.IataCode == code || a.IcaoCode == code || a.Ident == code ? 0 : 1)
                 .ThenBy(a => a.Type == "large_airport" ? 0 : a.Type == "medium_airport" ? 1 : 2)
                 .ThenBy(a => a.Name)
-                .Skip(offset).Take(limit).ToListAsync(ct);
+                .Skip(skip).Take(pageSize).ToListAsync(ct);
         }
 
         return await query
             .OrderBy(a => a.Type == "large_airport" ? 0 : a.Type == "medium_airport" ? 1 : 2)
             .ThenBy(a => a.Name)
-            .Skip(offset).Take(limit).ToListAsync(ct);
+            .Skip(skip).Take(pageSize).ToListAsync(ct);
     }
 
     public Task<Airport?> FindByCodeAsync(string code, CancellationToken ct)

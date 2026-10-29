@@ -10,8 +10,9 @@ public class AirlineRepository(AppDbContext db) : IAirlineRepository
 
     public void Add(Airline airline) => db.Airlines.Add(airline);
 
-    public async Task<IReadOnlyList<Airline>> SearchAsync(string? search, int limit, int offset, CancellationToken ct)
+    public async Task<IReadOnlyList<Airline>> SearchAsync(string? search, int pageNumber, int pageSize, CancellationToken ct)
     {
+        var skip = (pageNumber - 1) * pageSize;
         var query = db.Airlines.AsNoTracking().Where(a => a.IsActive);
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -22,8 +23,8 @@ public class AirlineRepository(AppDbContext db) : IAirlineRepository
 
             // Exact code matches first.
             return await query.OrderBy(a => a.IataCode == code || a.IcaoCode == code ? 0 : 1).ThenBy(a => a.Name)
-                .Skip(offset).Take(limit).ToListAsync(ct);
+                .Skip(skip).Take(pageSize).ToListAsync(ct);
         }
-        return await query.OrderBy(a => a.Name).Skip(offset).Take(limit).ToListAsync(ct);
+        return await query.OrderBy(a => a.Name).Skip(skip).Take(pageSize).ToListAsync(ct);
     }
 }

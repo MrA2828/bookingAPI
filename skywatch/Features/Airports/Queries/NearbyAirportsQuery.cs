@@ -5,7 +5,7 @@ using SkyWatch.Services;
 
 namespace SkyWatch.Features.Airports.Queries;
 
-public record NearbyAirportsQuery(double Latitude, double Longitude, double RadiusKm, int Limit, bool ScheduledOnly)
+public record NearbyAirportsQuery(double Latitude, double Longitude, double RadiusKm, int PageNumber, int PageSize, bool ScheduledOnly)
     : IRequest<IReadOnlyList<NearbyAirportDto>>;
 
 public class NearbyAirportsHandler(IUnitOfWork uow) : IRequestHandler<NearbyAirportsQuery, IReadOnlyList<NearbyAirportDto>>
@@ -22,7 +22,8 @@ public class NearbyAirportsHandler(IUnitOfWork uow) : IRequestHandler<NearbyAirp
             .Select(a => new NearbyAirportDto(AirportDto.From(a), Math.Round(Geo.DistanceKm(r.Latitude, r.Longitude, a.Latitude, a.Longitude), 1)))
             .Where(n => n.DistanceKm <= r.RadiusKm)
             .OrderBy(n => n.DistanceKm)
-            .Take(Math.Clamp(r.Limit, 1, 100))
+            .Skip((Math.Max(r.PageNumber, 1) - 1) * Math.Clamp(r.PageSize, 1, 100))
+            .Take(Math.Clamp(r.PageSize, 1, 100))
             .ToList();
     }
 }
