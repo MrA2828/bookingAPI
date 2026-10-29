@@ -2,8 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkyWatch.Entities;
+using SkyWatch.Features.Airports.Dtos;
 using SkyWatch.Features.Airports.Queries;
 using SkyWatch.Features.ReferenceData.Commands;
+using SkyWatch.Features.ReferenceData.Dtos;
 using SkyWatch.Features.ReferenceData.Queries;
 using SkyWatch.Features.ReferenceData.Sources;
 

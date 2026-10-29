@@ -1,13 +1,12 @@
 using MediatR;
 using SkyWatch.Entities;
+using SkyWatch.Features.ReferenceData.Dtos;
 using SkyWatch.Features.ReferenceData.Sources;
 using SkyWatch.Repositories;
 
 namespace SkyWatch.Features.ReferenceData.Commands;
 
 public record SyncReferenceDataCommand(IReadOnlyCollection<string> Sources) : IRequest<IReadOnlyList<SyncSourceResult>>;
-
-public record SyncSourceResult(string Source, bool Success, int Rows, int Added, int Updated, int Deactivated, string? Error);
 
 public class SyncReferenceDataHandler(IUnitOfWork uow, IReferenceDataSource source, ILogger<SyncReferenceDataHandler> logger)
     : IRequestHandler<SyncReferenceDataCommand, IReadOnlyList<SyncSourceResult>>
