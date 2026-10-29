@@ -13,10 +13,10 @@ public class AirportsController(ISender sender) : ControllerBase
 {
     [HttpGet]
     [EndpointSummary("Searches airports by name, city or IATA/ICAO code")]
-    [EndpointDescription("`q` matches an exact IATA/ICAO/ident code first, then names and cities (case-insensitive). Optional filters: `country` (ISO code, e.g. `GB`) and `type` (`large_airport`, `medium_airport`, `small_airport`). Paged with `limit` (max 100) and `offset`.")]
-    public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] string? country, [FromQuery] string? type,
+    [EndpointDescription("`search` matches an exact IATA/ICAO/ident code first, then names and cities (case-insensitive). Optional filters: `country` (ISO code, e.g. `GB`) and `type` (`large_airport`, `medium_airport`, `small_airport`). Paged with `limit` (max 100) and `offset`.")]
+    public async Task<IActionResult> Search([FromQuery] string? search, [FromQuery] string? country, [FromQuery] string? type,
         [FromQuery] int limit = 20, [FromQuery] int offset = 0, CancellationToken ct = default) =>
-        Ok(await sender.Send(new SearchAirportsQuery(q, country, type, limit, offset), ct));
+        Ok(await sender.Send(new SearchAirportsQuery(search, country, type, limit, offset), ct));
 
     [HttpGet("nearby")]
     [EndpointSummary("Lists airports within a radius of a point, nearest first")]

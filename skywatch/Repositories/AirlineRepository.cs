@@ -10,14 +10,14 @@ public class AirlineRepository(AppDbContext db) : IAirlineRepository
 
     public void Add(Airline airline) => db.Airlines.Add(airline);
 
-    public async Task<IReadOnlyList<Airline>> SearchAsync(string? q, int limit, int offset, CancellationToken ct)
+    public async Task<IReadOnlyList<Airline>> SearchAsync(string? search, int limit, int offset, CancellationToken ct)
     {
         var query = db.Airlines.AsNoTracking().Where(a => a.IsActive);
-        if (!string.IsNullOrWhiteSpace(q))
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            q = q.Trim();
-            var code = q.ToUpperInvariant();
-            var pattern = $"%{q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
+            search = search.Trim();
+            var code = search.ToUpperInvariant();
+            var pattern = $"%{search.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
             query = query.Where(a => a.IataCode == code || a.IcaoCode == code || EF.Functions.ILike(a.Name, pattern, "\\"));
 
             // Exact code matches first.

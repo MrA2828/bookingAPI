@@ -10,7 +10,7 @@ public class AirportRepository(AppDbContext db) : IAirportRepository
 
     public void Add(Airport airport) => db.Airports.Add(airport);
 
-    public async Task<IReadOnlyList<Airport>> SearchAsync(string? q, string? country, string? type, int limit, int offset, CancellationToken ct)
+    public async Task<IReadOnlyList<Airport>> SearchAsync(string? search, string? country, string? type, int limit, int offset, CancellationToken ct)
     {
         var query = db.Airports.AsNoTracking().Where(a => a.IsActive);
 
@@ -25,11 +25,11 @@ public class AirportRepository(AppDbContext db) : IAirportRepository
             query = query.Where(a => a.Type == t);
         }
 
-        if (!string.IsNullOrWhiteSpace(q))
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            q = q.Trim();
-            var code = q.ToUpperInvariant();
-            var pattern = $"%{q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
+            search = search.Trim();
+            var code = search.ToUpperInvariant();
+            var pattern = $"%{search.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_")}%";
             query = query.Where(a => a.IataCode == code || a.IcaoCode == code || a.Ident == code
                 || EF.Functions.ILike(a.Name, pattern, "\\") || (a.Municipality != null && EF.Functions.ILike(a.Municipality, pattern, "\\")));
 
