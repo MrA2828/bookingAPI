@@ -1,4 +1,5 @@
 using SkyWatch.Data;
+using SkyWatch.Features.ReferenceData.Sources;
 using SkyWatch.Entities;
 using SkyWatch.Repositories;
 using SkyWatch.Services;
@@ -42,7 +43,20 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAirportRepository, AirportRepository>();
+builder.Services.AddScoped<IAirlineRepository, AirlineRepository>();
+builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+builder.Services.AddScoped<ISyncStateRepository, SyncStateRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Reference data (airports, airlines, countries) is refreshed from open datasets by a daily background job.
+builder.Services.Configure<ReferenceDataOptions>(builder.Configuration.GetSection(ReferenceDataOptions.Section));
+builder.Services.AddHttpClient<IReferenceDataSource, HttpReferenceDataSource>(c =>
+{
+    c.Timeout = TimeSpan.FromMinutes(3);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("SkyWatch/1.0");
+});
+builder.Services.AddHostedService<ReferenceDataSyncService>();
 
 // Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous] (only /auth/* does).
 builder.Services.AddAuthorizationBuilder()
