@@ -1,0 +1,6 @@
+@AeroHub_Mock_HostAddress = http://localhost:5255
+
+GET {{AeroHub_Mock_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
