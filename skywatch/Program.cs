@@ -1,4 +1,9 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SkyWatch.Data;
+using SkyWatch.Features.Aircraft;
+using SkyWatch.Features.Aircraft.Classification;
+using SkyWatch.Features.Aircraft.Sources;
 using SkyWatch.Features.ReferenceData.Sources;
 using SkyWatch.Entities;
 using SkyWatch.Repositories;
@@ -6,13 +11,15 @@ using SkyWatch.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
 {
@@ -58,6 +65,28 @@ builder.Services.AddHttpClient<IReferenceDataSource, HttpReferenceDataSource>(c 
 });
 builder.Services.AddHostedService<ReferenceDataSyncService>();
 
+// Live aircraft: adsb.lol first, adsb.fi as the fallback, both polled on demand and cached in memory.
+// Routes (origin/destination) come from adsbdb.
+builder.Services.Configure<AircraftOptions>(builder.Configuration.GetSection(AircraftOptions.Section));
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<AdsbLolSource>(ConfigureAircraftClient(o => o.AdsbLolUrl));
+builder.Services.AddHttpClient<AdsbFiSource>(ConfigureAircraftClient(o => o.AdsbFiUrl));
+builder.Services.AddHttpClient<IFlightRouteProvider, AdsbdbFlightRouteProvider>(ConfigureAircraftClient(o => o.AdsbdbUrl));
+builder.Services.AddTransient<IAircraftSource>(sp => sp.GetRequiredService<AdsbLolSource>());
+builder.Services.AddTransient<IAircraftSource>(sp => sp.GetRequiredService<AdsbFiSource>());
+builder.Services.AddScoped<IAircraftFeed, AircraftFeed>();
+builder.Services.AddScoped<IAirlineCodes, AirlineCodes>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<AircraftFeedExceptionHandler>();
+
+static Action<IServiceProvider, HttpClient> ConfigureAircraftClient(Func<AircraftOptions, string> baseUrl) => (sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<AircraftOptions>>().Value;
+    client.BaseAddress = new Uri(baseUrl(options).TrimEnd('/') + "/");
+    client.Timeout = options.RequestTimeout;
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("SkyWatch/1.0");
+};
+
 // Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous] (only /auth/* does).
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
@@ -100,6 +129,7 @@ app.UseSwaggerUI(o =>
     o.RoutePrefix = "swagger";
 });
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

@@ -10,6 +10,15 @@ public class AirlineRepository(AppDbContext db) : IAirlineRepository
 
     public void Add(Airline airline) => db.Airlines.Add(airline);
 
+    public async Task<IReadOnlyList<string>> GetActiveIcaoCodesAsync(CancellationToken ct) =>
+        await db.Airlines.AsNoTracking().Where(a => a.IsActive && a.IcaoCode != null).Select(a => a.IcaoCode!).Distinct().ToListAsync(ct);
+
+    public Task<Airline?> FindByIcaoCodeAsync(string icaoCode, CancellationToken ct)
+    {
+        icaoCode = icaoCode.Trim().ToUpperInvariant();
+        return db.Airlines.AsNoTracking().Where(a => a.IsActive && a.IcaoCode == icaoCode).OrderBy(a => a.Id).FirstOrDefaultAsync(ct);
+    }
+
     public async Task<IReadOnlyList<Airline>> SearchAsync(string? search, int pageNumber, int pageSize, CancellationToken ct)
     {
         var skip = (pageNumber - 1) * pageSize;
