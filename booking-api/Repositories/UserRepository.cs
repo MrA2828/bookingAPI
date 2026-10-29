@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using BookingApi.Entities;
+using SkyWatch.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace BookingApi.Repositories;
+namespace SkyWatch.Repositories;
 
 // Thin wrapper over Identity's UserManager / SignInManager so handlers never touch them directly.
 public class UserRepository(UserManager<User> userManager, SignInManager<User> signInManager) : IUserRepository

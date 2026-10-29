@@ -1,7 +1,8 @@
-using BookingApi.Data;
-using BookingApi.Entities;
-using BookingApi.Repositories;
-using BookingApi.Services;
+using SkyWatch.Data;
+using SkyWatch.Entities;
+using SkyWatch.Repositories;
+using SkyWatch.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -43,6 +44,10 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Progr
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+// Every endpoint requires a signed-in user unless it opts out with [AllowAnonymous] (only /auth/* does).
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+
 builder.Services.AddIdentityApiEndpoints<User>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
@@ -74,10 +79,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-app.MapOpenApi();
+app.MapOpenApi().AllowAnonymous();
 app.UseSwaggerUI(o =>
 {
-    o.SwaggerEndpoint("/openapi/v1.json", "Booking API v1");
+    o.SwaggerEndpoint("/openapi/v1.json", "SkyWatch API v1");
     o.RoutePrefix = "swagger";
 });
 

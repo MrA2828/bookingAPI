@@ -1,12 +1,12 @@
 using System.Text;
 using System.Text.Encodings.Web;
-using BookingApi.Entities;
-using BookingApi.Repositories;
+using SkyWatch.Entities;
+using SkyWatch.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 public record ForgotPasswordCommand(string Email) : IRequest;
 

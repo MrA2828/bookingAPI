@@ -1,6 +1,6 @@
-using BookingApi.Data;
+using SkyWatch.Data;
 
-namespace BookingApi.Repositories;
+namespace SkyWatch.Repositories;
 
 public class UnitOfWork(AppDbContext db, IUserRepository users) : IUnitOfWork
 {

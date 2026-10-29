@@ -1,4 +1,4 @@
-namespace BookingApi.Repositories;
+namespace SkyWatch.Repositories;
 
 public interface IUnitOfWork
 {

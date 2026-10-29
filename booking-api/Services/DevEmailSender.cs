@@ -1,7 +1,7 @@
-using BookingApi.Entities;
+using SkyWatch.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace BookingApi.Services;
+namespace SkyWatch.Services;
 
 /// <summary>
 /// DEV ONLY. The links/codes that Identity would normally email are written to the

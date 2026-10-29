@@ -1,13 +1,15 @@
-using BookingApi.Features.Auth.Commands;
-using BookingApi.Features.Auth.Dtos;
+using SkyWatch.Features.Auth.Commands;
+using SkyWatch.Features.Auth.Dtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;   // built-in LoginRequest/RefreshRequest/... DTOs
 using Microsoft.AspNetCore.Mvc;
 
-namespace BookingApi.Controllers;
+namespace SkyWatch.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("auth")]
 public class AuthController(ISender sender) : ControllerBase
 {

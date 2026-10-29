@@ -1,10 +1,10 @@
 using System.Text;
-using BookingApi.Repositories;
+using SkyWatch.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 public record ResetPasswordCommand(string Email, string ResetCode, string NewPassword) : IRequest<IdentityResult>;
 

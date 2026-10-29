@@ -1,4 +1,4 @@
-namespace BookingApi.Entities;
+namespace SkyWatch.Entities;
 
 public static class Roles
 {

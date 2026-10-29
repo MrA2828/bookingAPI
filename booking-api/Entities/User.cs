@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace BookingApi.Entities;
+namespace SkyWatch.Entities;
 
 // The ASP.NET Identity login user as well as the domain user.
 // IdentityUser supplies Id (string/GUID), UserName, Email, PasswordHash, etc.

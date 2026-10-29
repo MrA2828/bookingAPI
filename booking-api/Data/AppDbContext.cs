@@ -1,8 +1,8 @@
-using BookingApi.Entities;
+using SkyWatch.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace BookingApi.Data;
+namespace SkyWatch.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User>(options)
 {

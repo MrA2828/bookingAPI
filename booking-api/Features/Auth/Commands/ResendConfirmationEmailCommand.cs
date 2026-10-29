@@ -1,7 +1,7 @@
-using BookingApi.Repositories;
+using SkyWatch.Repositories;
 using MediatR;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 // Returns false when no user has this email.
 public record ResendConfirmationEmailCommand(string Email, HttpContext Context) : IRequest<bool>;

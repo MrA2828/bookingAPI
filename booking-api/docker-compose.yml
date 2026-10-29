@@ -1,99 +1,35 @@
-# Spins up all three APIs, each with its own Postgres database.
-#   booking-api   -> http://localhost:8080
-#   aerohub-mock  -> http://localhost:8081
-#   skylink-mock  -> http://localhost:8082
-
-x-api-env: &api-env
-  ASPNETCORE_ENVIRONMENT: Development
-
-x-db-healthcheck: &db-healthcheck
-  interval: 5s
-  timeout: 3s
-  retries: 10
+# SkyWatch API + its Postgres database.
+#   skywatch -> http://localhost:8080
 
 services:
-  booking-api:
+  skywatch:
     build: .
     ports:
       - "8080:8080"
     environment:
-      <<: *api-env
+      ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=booking-db;Port=5432;Database=bookingapi;Username=bookingapi;Password=bookingapi_dev_pw
+      ConnectionStrings__Default: Host=skywatch-db;Port=5432;Database=skywatch;Username=skywatch;Password=skywatch_dev_pw
     depends_on:
-      booking-db:
+      skywatch-db:
         condition: service_healthy
 
-  aerohub-mock:
-    build: ../AeroHub_Mock
-    ports:
-      - "8081:8081"
-    environment:
-      <<: *api-env
-      ASPNETCORE_URLS: http://+:8081
-      ConnectionStrings__Default: Host=aerohub-db;Port=5432;Database=aerohub;Username=aerohub;Password=aerohub_dev_pw
-    depends_on:
-      aerohub-db:
-        condition: service_healthy
-
-  skylink-mock:
-    build: ../skylink-mock
-    ports:
-      - "8082:8082"
-    environment:
-      <<: *api-env
-      ASPNETCORE_URLS: http://+:8082
-      ConnectionStrings__Default: Host=skylink-db;Port=5432;Database=skylink;Username=skylink;Password=skylink_dev_pw
-    depends_on:
-      skylink-db:
-        condition: service_healthy
-
-  booking-db:
+  skywatch-db:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_USER: bookingapi
-      POSTGRES_PASSWORD: bookingapi_dev_pw
-      POSTGRES_DB: bookingapi
+      POSTGRES_USER: skywatch
+      POSTGRES_PASSWORD: skywatch_dev_pw
+      POSTGRES_DB: skywatch
     ports:
       - "5543:5432"
     volumes:
-      - booking-data:/var/lib/postgresql/data
+      - skywatch-data:/var/lib/postgresql/data
     healthcheck:
-      <<: *db-healthcheck
-      test: ["CMD-SHELL", "pg_isready -U bookingapi -d bookingapi"]
-
-  aerohub-db:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: aerohub
-      POSTGRES_PASSWORD: aerohub_dev_pw
-      POSTGRES_DB: aerohub
-    ports:
-      - "5544:5432"
-    volumes:
-      - aerohub-data:/var/lib/postgresql/data
-    healthcheck:
-      <<: *db-healthcheck
-      test: ["CMD-SHELL", "pg_isready -U aerohub -d aerohub"]
-
-  skylink-db:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: skylink
-      POSTGRES_PASSWORD: skylink_dev_pw
-      POSTGRES_DB: skylink
-    ports:
-      - "5545:5432"
-    volumes:
-      - skylink-data:/var/lib/postgresql/data
-    healthcheck:
-      <<: *db-healthcheck
-      test: ["CMD-SHELL", "pg_isready -U skylink -d skylink"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U skywatch -d skywatch"]
 
 volumes:
-  booking-data:
-  aerohub-data:
-  skylink-data:
+  skywatch-data:

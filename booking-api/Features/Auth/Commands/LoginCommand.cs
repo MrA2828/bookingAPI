@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using BookingApi.Repositories;
+using SkyWatch.Repositories;
 using MediatR;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 public record LoginCommand(string Email, string Password) : IRequest<LoginResult>;
 

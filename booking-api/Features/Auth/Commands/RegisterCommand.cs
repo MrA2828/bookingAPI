@@ -1,9 +1,9 @@
-using BookingApi.Entities;
-using BookingApi.Repositories;
+using SkyWatch.Entities;
+using SkyWatch.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 public record RegisterCommand(string UserName, string Email, string Password, HttpContext Context) : IRequest<IdentityResult>;
 

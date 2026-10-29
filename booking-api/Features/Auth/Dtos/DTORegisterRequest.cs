@@ -1,4 +1,4 @@
-namespace BookingApi.Features.Auth.Dtos;
+namespace SkyWatch.Features.Auth.Dtos;
 
 /// <summary>The request type for the "/auth/register" endpoint.</summary>
 public sealed class DTORegisterRequest

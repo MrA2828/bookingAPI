@@ -1,12 +1,12 @@
 using System.Text;
-using BookingApi.Entities;
-using BookingApi.Repositories;
+using SkyWatch.Entities;
+using SkyWatch.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 // A command carries DATA only. Services (repositories, LinkGenerator, the email sender) are injected into the handler.
 public class SendConfirmationEmailCommand : IRequest

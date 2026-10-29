@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using BookingApi.Entities;
+using SkyWatch.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace BookingApi.Repositories;
+namespace SkyWatch.Repositories;
 
 public interface IUserRepository
 {

@@ -1,11 +1,11 @@
 using System.Security.Claims;
-using BookingApi.Repositories;
+using SkyWatch.Repositories;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-namespace BookingApi.Features.Auth.Commands;
+namespace SkyWatch.Features.Auth.Commands;
 
 public record RefreshCommand(string RefreshToken) : IRequest<ClaimsPrincipal?>;
 
