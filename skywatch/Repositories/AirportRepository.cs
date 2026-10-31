@@ -62,4 +62,14 @@ public class AirportRepository(AppDbContext db) : IAirportRepository
             .Where(a => a.IsActive && a.Latitude >= minLat && a.Latitude <= maxLat && a.Longitude >= minLon && a.Longitude <= maxLon
                 && (!scheduledOnly || a.ScheduledService))
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Airport>> InViewAsync(double south, double north, double west, double east, bool scheduledOnly, string[]? types, int limit, CancellationToken ct) =>
+        await db.Airports.AsNoTracking()
+            .Where(a => a.IsActive && a.Latitude >= south && a.Latitude <= north && a.Longitude >= west && a.Longitude <= east
+                && (!scheduledOnly || a.ScheduledService)
+                && (types == null || types.Length == 0 || types.Contains(a.Type)))
+            .OrderBy(a => a.Type == "large_airport" ? 0 : a.Type == "medium_airport" ? 1 : 2)
+            .ThenBy(a => a.Name)
+            .Take(limit)
+            .ToListAsync(ct);
 }

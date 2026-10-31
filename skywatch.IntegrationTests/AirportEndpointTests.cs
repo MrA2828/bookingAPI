@@ -125,4 +125,52 @@ public class AirportEndpointTests(SkyWatchFactory api)
     [InlineData("/airports/nearby?lat=51&lon=0&radiusKm=501")]
     public async Task Nearby_rejects_missing_or_out_of_range_input(string url) =>
         Assert.Equal(HttpStatusCode.BadRequest, (await api.Client.GetAsync(url)).StatusCode);
+
+    private static string[] Idents(JsonElement items) => items.EnumerateArray().Select(i => i.GetProperty("ident").GetString()!).ToArray();
+
+    [Fact]
+    public async Task InView_returns_airports_in_the_rectangle_biggest_first()
+    {
+        // Large first (Gatwick, Heathrow), then medium (City, Luton), each by name. The grass strip is unscheduled, the zombie inactive.
+        var items = await GetJson("/airports/in-view?south=51&north=52&west=-1&east=1");
+
+        Assert.Equal(["EGKK", "EGLL", "EGLC", "EGGW"], Idents(items));
+    }
+
+    [Fact]
+    public async Task InView_has_no_radius_limit_and_can_span_continents()
+    {
+        var items = await GetJson("/airports/in-view?south=-60&north=70&west=-170&east=170");
+
+        Assert.Contains("KJFK", Idents(items));
+        Assert.Contains("EGLL", Idents(items));
+    }
+
+    [Fact]
+    public async Task InView_filters_by_type_and_can_include_unscheduled_fields()
+    {
+        var large = await GetJson("/airports/in-view?south=51&north=52&west=-1&east=1&types=large_airport");
+        var all = await GetJson("/airports/in-view?south=51&north=52&west=-1&east=1&scheduledOnly=false");
+
+        Assert.Equal(["EGKK", "EGLL"], Idents(large));
+        Assert.Contains("EGXX", Idents(all));
+    }
+
+    [Fact]
+    public async Task InView_keeps_the_biggest_airports_when_the_limit_cuts_the_list()
+    {
+        var items = await GetJson("/airports/in-view?south=51&north=52&west=-1&east=1&limit=2");
+
+        Assert.Equal(["EGKK", "EGLL"], Idents(items));
+    }
+
+    [Theory]
+    [InlineData("/airports/in-view?south=51&north=52&west=-1")]
+    [InlineData("/airports/in-view?south=52&north=51&west=-1&east=1")]
+    [InlineData("/airports/in-view?south=51&north=52&west=1&east=-1")]
+    [InlineData("/airports/in-view?south=51&north=91&west=-1&east=1")]
+    [InlineData("/airports/in-view?south=51&north=52&west=-1&east=1&limit=2001")]
+    [InlineData("/airports/in-view?south=51&north=52&west=-1&east=1&types=heliport")]
+    public async Task InView_rejects_missing_or_invalid_input(string url) =>
+        Assert.Equal(HttpStatusCode.BadRequest, (await api.Client.GetAsync(url)).StatusCode);
 }

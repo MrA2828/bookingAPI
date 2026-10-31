@@ -23,6 +23,12 @@ public class AirportsController(ISender sender) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<NearbyAirportReturnDto>>> Nearby([FromQuery] NearbyAirportsRequestDto request, CancellationToken ct) =>
         Ok(await sender.Send(new NearbyAirportsQuery(request), ct));
 
+    [HttpGet("in-view")]
+    [EndpointSummary("Lists the airports inside a map rectangle, biggest first")]
+    [EndpointDescription("Give `south`, `north`, `west` and `east` (a view that crosses the antimeridian must be split into two calls). `types` (repeat it: `types=large_airport&types=medium_airport`) picks airport sizes, default all. By default only airports with scheduled service are returned; pass `scheduledOnly=false` to include small airfields. At most `limit` airports (default 1000, max 2000) are returned, large ones first, so zooming in shows the rest.")]
+    public async Task<ActionResult<IReadOnlyList<AirportReturnDto>>> InView([FromQuery] AirportsInViewRequestDto request, CancellationToken ct) =>
+        Ok(await sender.Send(new AirportsInViewQuery(request), ct));
+
     [HttpGet("{code}")]
     [EndpointSummary("Gets one airport by IATA (JFK), ICAO (KJFK) or ident code")]
     public async Task<ActionResult<AirportReturnDto>> Get(string code, CancellationToken ct) =>
