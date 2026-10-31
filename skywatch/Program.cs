@@ -20,6 +20,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+// The OpenAPI generator reads these options, not the MVC ones above. Without them numbers are documented as
+// "number | string" (which Swagger UI cannot validate) and enums as integers.
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    o.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
 {
@@ -41,6 +48,35 @@ builder.Services.AddOpenApi(options =>
         {
             [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
         });
+        return Task.CompletedTask;
+    });
+
+    // Swagger UI cannot offer choices for an array whose items are a $ref to an enum, so inline the values into
+    // array query parameters (e.g. kinds) to get a pick-list where several values can be selected.
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        var schemas = document.Components?.Schemas;
+        var parameters = document.Paths.Values
+            .Where(path => path.Operations is not null)
+            .SelectMany(path => path.Operations!.Values)
+            .Where(operation => operation.Parameters is not null)
+            .SelectMany(operation => operation.Parameters!)
+            .OfType<OpenApiParameter>();
+
+        foreach (var parameter in parameters)
+        {
+            if (parameter.Schema?.Type != JsonSchemaType.Array
+                || parameter.Schema.Items is not OpenApiSchemaReference { Reference.Id: { } id }
+                || schemas is null || !schemas.TryGetValue(id, out var enumSchema)
+                || enumSchema.Enum is not { Count: > 0 } values)
+                continue;
+
+            parameter.Schema = new OpenApiSchema
+            {
+                Type = JsonSchemaType.Array,
+                Items = new OpenApiSchema { Type = JsonSchemaType.String, Enum = values.ToList() }
+            };
+        }
         return Task.CompletedTask;
     });
 });
