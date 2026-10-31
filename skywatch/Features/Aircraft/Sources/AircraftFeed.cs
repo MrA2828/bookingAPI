@@ -46,8 +46,9 @@ public class AircraftFeed(
         using var _ = await locks.AcquireAsync(key, ct);
         if (TryGetFresh(key, out cached)) return cached!;
 
-        Exception? lastError = null;
-        foreach (var source in sources)
+        // If every source just failed for this key, the requests that queued behind that attempt do not try again.
+        var recentlyFailed = cache.TryGetValue(FailureKey(key), out Exception? lastError);
+        foreach (var source in recentlyFailed ? Enumerable.Empty<IAircraftSource>() : sources)
         {
             try
             {
@@ -67,6 +68,7 @@ public class AircraftFeed(
             }
         }
 
+        if (!recentlyFailed) cache.Set(FailureKey(key), lastError, _options.FailureTtl);
         if (cached is not null)
         {
             logger.LogWarning("All aircraft sources failed for {Key}; serving a snapshot from {FetchedAt:u}", key, cached.FetchedAt);
@@ -74,6 +76,8 @@ public class AircraftFeed(
         }
         throw new AircraftFeedUnavailableException("No live aircraft source is reachable right now", lastError);
     }
+
+    private static string FailureKey(string key) => $"failed:{key}";
 
     // Returns true only for a fresh copy; "cached" is the stale copy (if any) otherwise.
     private bool TryGetFresh(string key, out AircraftSnapshot? cached)

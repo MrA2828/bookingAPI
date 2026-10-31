@@ -21,6 +21,10 @@ public class AircraftOptions
     public TimeSpan CacheTtl { get; set; } = TimeSpan.FromSeconds(10);
     public TimeSpan StaleTtl { get; set; } = TimeSpan.FromMinutes(10);
 
+    // After every source failed for an area, requests for it within FailureTtl are answered (stale copy or 503)
+    // without calling the sources again.
+    public TimeSpan FailureTtl { get; set; } = TimeSpan.FromSeconds(5);
+
     // adsbdb asks consumers to cache routes only briefly.
     public TimeSpan RouteCacheTtl { get; set; } = TimeSpan.FromMinutes(10);
     public TimeSpan UnknownRouteCacheTtl { get; set; } = TimeSpan.FromMinutes(2);
