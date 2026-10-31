@@ -12,24 +12,17 @@ public record GetLiveAircraftQuery(LiveAircraftRequestDto Request) : IRequest<Li
 public class GetLiveAircraftHandler(IAircraftFeed feed, IAirlineCodes airlineCodes)
     : IRequestHandler<GetLiveAircraftQuery, LiveAircraftPageReturnDto>
 {
-    // Military and private aircraft are left out unless asked for.
-    private static readonly AircraftKind[] DefaultKinds = [AircraftKind.Commercial, AircraftKind.Unknown];
-
     public async Task<LiveAircraftPageReturnDto> Handle(GetLiveAircraftQuery r, CancellationToken ct)
     {
         var radiusNauticalMiles = (int)Math.Ceiling(r.Request.RadiusKm / Geo.KilometresPerNauticalMile);
         var snapshot = await feed.GetAroundAsync(r.Request.Latitude, r.Request.Longitude, radiusNauticalMiles, ct);
         var airlineIcaoCodes = await airlineCodes.GetIcaoCodesAsync(ct);
-        var kinds = (r.Request.Kinds is { Length: > 0 } ? r.Request.Kinds : DefaultKinds).ToHashSet();
+        var filter = new AircraftFilter(r.Request.Kinds, r.Request.IncludeOnGround, r.Request.MinAltitudeFt, r.Request.MaxAltitudeFt);
 
         var matches = snapshot.Aircraft
             .Select(a => (State: a, Kind: AircraftClassifier.Classify(a, airlineIcaoCodes),
                 Distance: Geo.DistanceKm(r.Request.Latitude, r.Request.Longitude, a.Latitude, a.Longitude)))
-            .Where(x => x.Distance <= r.Request.RadiusKm
-                && kinds.Contains(x.Kind)
-                && (r.Request.IncludeOnGround || !x.State.OnGround)
-                && (r.Request.MinAltitudeFt is not { } min || x.State.AltitudeFt >= min)
-                && (r.Request.MaxAltitudeFt is not { } max || x.State.AltitudeFt <= max))
+            .Where(x => x.Distance <= r.Request.RadiusKm && filter.Matches(x.State, x.Kind))
             .OrderBy(x => x.Distance)
             .ToList();
 
