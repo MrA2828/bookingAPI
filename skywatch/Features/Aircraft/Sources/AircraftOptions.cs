@@ -8,7 +8,13 @@ public class AircraftOptions
     public string AdsbFiUrl { get; set; } = "https://opendata.adsb.fi";
     public string AdsbdbUrl { get; set; } = "https://api.adsbdb.com";
 
-    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(8);
+    // Timeout of a single HTTP attempt. With retries a call can take (RetryCount + 1) * RequestTimeout plus the delays.
+    public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    // Transient failures (connection errors, timeouts, 5xx) are retried this many times with exponential backoff
+    // starting at RetryDelay. A 429 is not retried: the next source is tried instead.
+    public int RetryCount { get; set; } = 1;
+    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromMilliseconds(300);
 
     // Positions are served from memory for CacheTtl. If every source is down, a copy up to StaleTtl old
     // is returned (flagged stale) rather than an error.
