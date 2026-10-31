@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using SkyWatch.Features.Airports.Dtos;
 using SkyWatch.Features.Airports.Queries;
 
@@ -21,7 +22,7 @@ public class AirportsController(ISender sender) : ControllerBase
     [HttpGet("nearby")]
     [EndpointSummary("Lists airports within a radius of a point, nearest first")]
     [EndpointDescription("Give `lat`, `lon` and `radiusKm` (max 500). By default only airports with scheduled service are returned; pass `scheduledOnly=false` to include small airfields. Paged with `pageNumber` (starts at 1) and `pageSize` (max 100).")]
-    public async Task<IActionResult> Nearby([FromQuery] double lat, [FromQuery] double lon, [FromQuery] double radiusKm = 100,
+    public async Task<IActionResult> Nearby([BindRequired, FromQuery] double lat, [BindRequired, FromQuery] double lon, [FromQuery] double radiusKm = 100,
         [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] bool scheduledOnly = true, CancellationToken ct = default)
     {
         if (lat is < -90 or > 90 || lon is < -180 or > 180 || radiusKm is <= 0 or > 500)

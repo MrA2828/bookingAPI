@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using SkyWatch.Features.Aircraft.Models;
 using SkyWatch.Features.Aircraft.Queries;
 
@@ -20,7 +21,7 @@ public partial class AircraftController(ISender sender) : ControllerBase
     [HttpGet]
     [EndpointSummary("Lists live aircraft around a point, nearest first")]
     [EndpointDescription("Give `lat`, `lon` and `radiusKm` (max 440). Filters: `kinds` (repeat it: `kinds=commercial&kinds=private`; values `commercial`, `private`, `military`, `unknown`; by default only commercial and unknown aircraft are returned, so military and private are excluded), `minAltitudeFt`, `maxAltitudeFt`, and `includeOnGround` (default false). `kind` is a best-effort guess: ADS-B has no private/commercial field, so it is derived from the callsign, registration and aircraft category; military comes from an aircraft database flag. Positions are cached for about 10 seconds; `source`, `fetchedAt` and `stale` say where and when they were read. Paged with `pageNumber` (starts at 1) and `pageSize` (max 100).")]
-    public async Task<IActionResult> Live([FromQuery] double lat, [FromQuery] double lon, [FromQuery] double radiusKm = 100,
+    public async Task<IActionResult> Live([BindRequired, FromQuery] double lat, [BindRequired, FromQuery] double lon, [FromQuery] double radiusKm = 100,
         [FromQuery] AircraftKind[]? kinds = null, [FromQuery] int? minAltitudeFt = null, [FromQuery] int? maxAltitudeFt = null,
         [FromQuery] bool includeOnGround = false, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
