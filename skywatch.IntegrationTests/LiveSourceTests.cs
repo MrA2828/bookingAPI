@@ -52,7 +52,7 @@ public class LiveSourceTests(SkyWatchFactory api)
     [Fact]
     public async Task Adsbdb_returns_a_route_with_coordinates_or_cleanly_returns_none()
     {
-        var provider = new AdsbdbFlightRouteProvider(Http("https://api.adsbdb.com/"), new MemoryCache(new MemoryCacheOptions()),
+        var provider = new AdsbdbFlightRouteProvider(Http("https://api.adsbdb.com/"), new MemoryCache(new MemoryCacheOptions()), new KeyedLock(),
             Options.Create(new AircraftOptions()), NullLogger<AdsbdbFlightRouteProvider>.Instance);
 
         var route = await provider.GetRouteAsync("BAW117", default);
@@ -66,7 +66,7 @@ public class LiveSourceTests(SkyWatchFactory api)
     [Fact]
     public async Task Adsbdb_returns_none_for_a_nonsense_callsign()
     {
-        var provider = new AdsbdbFlightRouteProvider(Http("https://api.adsbdb.com/"), new MemoryCache(new MemoryCacheOptions()),
+        var provider = new AdsbdbFlightRouteProvider(Http("https://api.adsbdb.com/"), new MemoryCache(new MemoryCacheOptions()), new KeyedLock(),
             Options.Create(new AircraftOptions()), NullLogger<AdsbdbFlightRouteProvider>.Instance);
 
         Assert.Null(await provider.GetRouteAsync("ZZZZ0000", default));
