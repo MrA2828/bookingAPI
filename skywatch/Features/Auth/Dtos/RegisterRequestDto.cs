@@ -1,7 +1,7 @@
 namespace SkyWatch.Features.Auth.Dtos;
 
 /// <summary>The request type for the "/auth/register" endpoint.</summary>
-public sealed class DTORegisterRequest
+public sealed class RegisterRequestDto
 {
     public required string UserName { get; set; }
     public required string Email { get; init; }

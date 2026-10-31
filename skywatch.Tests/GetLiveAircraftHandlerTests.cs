@@ -1,3 +1,4 @@
+using SkyWatch.Features.Aircraft.Dtos;
 using SkyWatch.Features.Aircraft.Models;
 using SkyWatch.Features.Aircraft.Queries;
 
@@ -22,9 +23,13 @@ public class GetLiveAircraftHandlerTests
 
     private static GetLiveAircraftQuery Query(IReadOnlyList<AircraftKind>? kinds = null, int? minAlt = null, int? maxAlt = null,
         bool includeOnGround = false, double radiusKm = 100, int pageNumber = 1, int pageSize = 20) =>
-        new(51.5, -0.1, radiusKm, kinds, minAlt, maxAlt, includeOnGround, pageNumber, pageSize);
+        new(new LiveAircraftRequestDto
+        {
+            Latitude = 51.5, Longitude = -0.1, RadiusKm = radiusKm, Kinds = kinds?.ToArray(), MinAltitudeFt = minAlt,
+            MaxAltitudeFt = maxAlt, IncludeOnGround = includeOnGround, PageNumber = pageNumber, PageSize = pageSize
+        });
 
-    private static string[] Hexes(SkyWatch.Features.Aircraft.Dtos.LiveAircraftPageDto page) => page.Items.Select(i => i.Hex).ToArray();
+    private static string[] Hexes(SkyWatch.Features.Aircraft.Dtos.LiveAircraftPageReturnDto page) => page.Items.Select(i => i.Hex).ToArray();
 
     [Fact]
     public async Task By_default_excludes_military_private_and_grounded_aircraft_and_sorts_nearest_first()

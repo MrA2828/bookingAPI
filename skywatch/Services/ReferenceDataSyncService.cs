@@ -67,7 +67,7 @@ public class ReferenceDataSyncService(
     }
 
     // Never synced -> due now. Last run failed -> retry after RetryInterval. Otherwise -> LastSyncedAt + Interval.
-    private DateTime DueAt(string source, IReadOnlyList<SyncStateDto> states)
+    private DateTime DueAt(string source, IReadOnlyList<SyncStateReturnDto> states)
     {
         var state = states.FirstOrDefault(s => s.Source == source);
         if (state?.LastAttemptAt is null) return DateTime.MinValue;

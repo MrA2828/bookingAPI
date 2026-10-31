@@ -1,3 +1,3 @@
 namespace SkyWatch.Features.Aircraft.Dtos;
 
-public record GeoPointDto(double Latitude, double Longitude);
+public record GeoPointReturnDto(double Latitude, double Longitude);

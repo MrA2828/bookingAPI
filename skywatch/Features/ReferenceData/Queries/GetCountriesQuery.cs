@@ -4,10 +4,10 @@ using SkyWatch.Repositories;
 
 namespace SkyWatch.Features.ReferenceData.Queries;
 
-public record GetCountriesQuery : IRequest<IReadOnlyList<CountryDto>>;
+public record GetCountriesQuery : IRequest<IReadOnlyList<CountryReturnDto>>;
 
-public class GetCountriesHandler(IUnitOfWork uow) : IRequestHandler<GetCountriesQuery, IReadOnlyList<CountryDto>>
+public class GetCountriesHandler(IUnitOfWork uow) : IRequestHandler<GetCountriesQuery, IReadOnlyList<CountryReturnDto>>
 {
-    public async Task<IReadOnlyList<CountryDto>> Handle(GetCountriesQuery request, CancellationToken ct) =>
-        (await uow.Countries.ListAsync(ct)).Select(c => new CountryDto(c.Code, c.Name, c.Continent)).ToList();
+    public async Task<IReadOnlyList<CountryReturnDto>> Handle(GetCountriesQuery request, CancellationToken ct) =>
+        (await uow.Countries.ListAsync(ct)).Select(c => new CountryReturnDto(c.Code, c.Name, c.Continent)).ToList();
 }

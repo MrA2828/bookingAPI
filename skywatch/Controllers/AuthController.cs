@@ -23,7 +23,7 @@ public class AuthController(ISender sender) : ControllerBase
 > **Dev note:** No real email is sent. The confirmation link is written to the **debug console / application log** as a `[DEV EMAIL] Confirm email for ...` warning. Copy the link from there and open it in a browser (or call `GET /auth/confirmEmail`).
 
 **Responses:** `200` created; `400` validation problem (duplicate email/username, weak password).")]
-    public async Task<IActionResult> Register([FromBody] DTORegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
     {
         var result = await sender.Send(new RegisterCommand(request.UserName, request.Email, request.Password, HttpContext));
         if (!result.Succeeded)

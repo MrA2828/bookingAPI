@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using SkyWatch.Controllers;
+using SkyWatch.Features.Aircraft.Dtos;
+using SkyWatch.Features.Airports.Dtos;
 
 namespace SkyWatch.Tests;
 
@@ -8,13 +9,11 @@ namespace SkyWatch.Tests;
 public class ControllerContractTests
 {
     [Theory]
-    [InlineData(typeof(AircraftController), "Live")]
-    [InlineData(typeof(AirportsController), "Nearby")]
-    public void Latitude_and_longitude_are_required(Type controller, string action)
+    [InlineData(typeof(LiveAircraftRequestDto))]
+    [InlineData(typeof(NearbyAirportsRequestDto))]
+    public void Latitude_and_longitude_are_required(Type requestDto)
     {
-        var parameters = controller.GetMethod(action)!.GetParameters();
-
-        foreach (var name in new[] { "lat", "lon" })
-            Assert.NotNull(parameters.Single(p => p.Name == name).GetCustomAttribute<BindRequiredAttribute>());
+        foreach (var name in new[] { "Latitude", "Longitude" })
+            Assert.NotNull(requestDto.GetProperty(name)!.GetCustomAttribute<BindRequiredAttribute>());
     }
 }

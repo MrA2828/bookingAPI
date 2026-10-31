@@ -4,11 +4,11 @@ using SkyWatch.Repositories;
 
 namespace SkyWatch.Features.Airports.Queries;
 
-public record SearchAirportsQuery(string? Search, string? Country, string? Type, int PageNumber, int PageSize) : IRequest<IReadOnlyList<AirportDto>>;
+public record SearchAirportsQuery(SearchAirportsRequestDto Request) : IRequest<IReadOnlyList<AirportReturnDto>>;
 
-public class SearchAirportsHandler(IUnitOfWork uow) : IRequestHandler<SearchAirportsQuery, IReadOnlyList<AirportDto>>
+public class SearchAirportsHandler(IUnitOfWork uow) : IRequestHandler<SearchAirportsQuery, IReadOnlyList<AirportReturnDto>>
 {
-    public async Task<IReadOnlyList<AirportDto>> Handle(SearchAirportsQuery r, CancellationToken ct) =>
-        (await uow.Airports.SearchAsync(r.Search, r.Country, r.Type, Math.Max(r.PageNumber, 1), Math.Clamp(r.PageSize, 1, 100), ct))
-            .Select(AirportDto.From).ToList();
+    public async Task<IReadOnlyList<AirportReturnDto>> Handle(SearchAirportsQuery r, CancellationToken ct) =>
+        (await uow.Airports.SearchAsync(r.Request.Search, r.Request.Country, r.Request.Type, Math.Max(r.Request.PageNumber, 1), Math.Clamp(r.Request.PageSize, 1, 100), ct))
+            .Select(AirportReturnDto.From).ToList();
 }
