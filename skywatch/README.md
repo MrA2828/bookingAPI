@@ -32,6 +32,17 @@ on startup if the data is missing or stale, then every 24 hours (`ReferenceData`
 Records that disappear from a source are marked inactive, never deleted. Check the last run with
 `GET /reference-data/status`.
 
+## Tests
+
+Run from this folder (`skywatch`). The test projects are siblings, hence the `../`.
+
+```bash
+dotnet test ../skywatch.Tests                                       # unit tests, no dependencies
+docker compose up -d skywatch-db                                    # integration tests need Postgres on :5543
+dotnet test ../skywatch.IntegrationTests --filter "Category!=Network"   # offline, uses a throw-away database
+dotnet test ../skywatch.IntegrationTests --filter "Category=Network"    # hits the real ADS-B feeds
+```
+
 ## Debugging
 
 ```bash
