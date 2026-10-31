@@ -5,6 +5,7 @@ using SkyWatch.Features.Aircraft;
 using SkyWatch.Features.Aircraft.Classification;
 using SkyWatch.Features.Aircraft.Sources;
 using SkyWatch.Features.ReferenceData.Sources;
+using SkyWatch.RateLimiting;
 using SkyWatch.Entities;
 using SkyWatch.Repositories;
 using SkyWatch.Services;
@@ -105,21 +106,24 @@ builder.Services.AddHostedService<ReferenceDataSyncService>();
 // Routes (origin/destination) come from adsbdb.
 builder.Services.Configure<AircraftOptions>(builder.Configuration.GetSection(AircraftOptions.Section));
 builder.Services.AddMemoryCache();
-builder.Services.AddHttpClient<AdsbLolSource>(ConfigureAircraftClient(o => o.AdsbLolUrl));
-builder.Services.AddHttpClient<AdsbFiSource>(ConfigureAircraftClient(o => o.AdsbFiUrl));
-builder.Services.AddHttpClient<IFlightRouteProvider, AdsbdbFlightRouteProvider>(ConfigureAircraftClient(o => o.AdsbdbUrl));
+builder.Services.AddSingleton<KeyedLock>();
+// Each client retries transient failures (see AircraftHttpResilience) before the feed moves on to the next source.
+builder.Services.AddHttpClient<AdsbLolSource>(ConfigureAircraftClient(o => o.AdsbLolUrl)).AddAircraftResilience();
+builder.Services.AddHttpClient<AdsbFiSource>(ConfigureAircraftClient(o => o.AdsbFiUrl)).AddAircraftResilience();
+builder.Services.AddHttpClient<IFlightRouteProvider, AdsbdbFlightRouteProvider>(ConfigureAircraftClient(o => o.AdsbdbUrl)).AddAircraftResilience();
 builder.Services.AddTransient<IAircraftSource>(sp => sp.GetRequiredService<AdsbLolSource>());
 builder.Services.AddTransient<IAircraftSource>(sp => sp.GetRequiredService<AdsbFiSource>());
 builder.Services.AddScoped<IAircraftFeed, AircraftFeed>();
 builder.Services.AddScoped<IAirlineCodes, AirlineCodes>();
 builder.Services.AddProblemDetails();
+builder.Services.AddApiRateLimiting(builder.Configuration);
 builder.Services.AddExceptionHandler<AircraftFeedExceptionHandler>();
 
 static Action<IServiceProvider, HttpClient> ConfigureAircraftClient(Func<AircraftOptions, string> baseUrl) => (sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<AircraftOptions>>().Value;
     client.BaseAddress = new Uri(baseUrl(options).TrimEnd('/') + "/");
-    client.Timeout = options.RequestTimeout;
+    client.Timeout = Timeout.InfiniteTimeSpan; // each attempt is timed by the resilience handler instead
     client.DefaultRequestHeaders.UserAgent.ParseAdd("SkyWatch/1.0");
 };
 
@@ -169,6 +173,7 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseRateLimiter(); // after authentication so it can count per user; before authorization so 401s are limited too
 app.UseAuthorization();
 
 app.MapControllers();

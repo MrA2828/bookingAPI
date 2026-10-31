@@ -32,6 +32,16 @@ on startup if the data is missing or stale, then every 24 hours (`ReferenceData`
 Records that disappear from a source are marked inactive, never deleted. Check the last run with
 `GET /reference-data/status`.
 
+## Resilience and limits
+
+- **Retries**: each upstream call (adsb.lol, adsb.fi, adsbdb) is retried on connection errors, timeouts and 5xx
+  with exponential backoff (`Aircraft:RetryCount`, `Aircraft:RequestTimeout` per attempt). A 429 is not retried.
+- **Fallback**: if adsb.lol still fails, adsb.fi is tried; if both fail, the last snapshot (up to 10 minutes old)
+  is returned with `stale: true`; with no snapshot at all the API answers 503.
+- **One call per area**: concurrent requests for the same 0.1° cell wait on a per-key lock and share one upstream call.
+- **Rate limit**: `RateLimit:PermitLimit` requests per `Window` per signed-in user (per IP when anonymous).
+  Over the limit the API answers 429 with a `Retry-After` header. Swagger and `/openapi` are exempt.
+
 ## Tests
 
 Run from this folder (`skywatch`). The test projects are siblings, hence the `../`.
