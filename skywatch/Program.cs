@@ -138,3 +138,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Lets the integration tests host the app with WebApplicationFactory<Program>.
+public partial class Program;
