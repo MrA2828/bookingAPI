@@ -5,6 +5,7 @@ using SkyWatch.Features.Aircraft;
 using SkyWatch.Features.Aircraft.Classification;
 using SkyWatch.Features.Aircraft.Sources;
 using SkyWatch.Features.ReferenceData.Sources;
+using SkyWatch.Cors;
 using SkyWatch.RateLimiting;
 using SkyWatch.Entities;
 using SkyWatch.Repositories;
@@ -118,6 +119,7 @@ builder.Services.AddScoped<IAircraftFeed, AircraftFeed>();
 builder.Services.AddScoped<IAirlineCodes, AirlineCodes>();
 builder.Services.AddProblemDetails();
 builder.Services.AddApiRateLimiting(builder.Configuration);
+builder.Services.AddWebClientCors(builder.Configuration);
 builder.Services.AddExceptionHandler<AircraftFeedExceptionHandler>();
 
 static Action<IServiceProvider, HttpClient> ConfigureAircraftClient(Func<AircraftOptions, string> baseUrl) => (sp, client) =>
@@ -173,6 +175,7 @@ app.UseSwaggerUI(o =>
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
+app.UseWebClientCors(); // before authentication and the rate limiter so preflight requests and 429 responses carry the CORS headers
 app.UseAuthentication();
 app.UseRateLimiter(); // after authentication so it can count per user; before authorization so 401s are limited too
 app.UseAuthorization();
