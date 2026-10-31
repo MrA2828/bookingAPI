@@ -21,6 +21,10 @@ public class AircraftOptions
     public TimeSpan CacheTtl { get; set; } = TimeSpan.FromSeconds(10);
     public TimeSpan StaleTtl { get; set; } = TimeSpan.FromMinutes(10);
 
+    // A wide map view is made of many circles, so it accepts cached ones up to this old: the public sources ask for
+    // light use, and in 30 seconds an airliner moves about 7 km, which a map of a whole region cannot show.
+    public TimeSpan WideViewMaxAge { get; set; } = TimeSpan.FromSeconds(30);
+
     // After every source failed for an area, requests for it within FailureTtl are answered (stale copy or 503)
     // without calling the sources again.
     public TimeSpan FailureTtl { get; set; } = TimeSpan.FromSeconds(5);

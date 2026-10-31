@@ -32,11 +32,31 @@ public class FakeAircraftSource(string name, Func<IReadOnlyList<AircraftState>> 
 
 public class FakeAircraftFeed(IReadOnlyList<AircraftState> aircraft, bool stale = false) : IAircraftFeed
 {
-    public Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct) =>
+    public Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct,
+        TimeSpan? maxAge = null) =>
         Task.FromResult(new AircraftSnapshot(aircraft, DateTime.UtcNow, "fake", stale));
 
     public Task<AircraftState?> GetByHexAsync(string hex, CancellationToken ct) =>
         Task.FromResult(aircraft.FirstOrDefault(a => a.Hex == hex));
+}
+
+// Answers each circle with whatever the function returns for its centre; null means every source failed for it.
+public class FakeTiledAircraftFeed(Func<double, double, IReadOnlyList<AircraftState>?> respond) : IAircraftFeed
+{
+    public int Calls;
+    public TimeSpan? LastMaxAge;
+
+    public Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct,
+        TimeSpan? maxAge = null)
+    {
+        Interlocked.Increment(ref Calls);
+        LastMaxAge = maxAge;
+        return respond(latitude, longitude) is { } aircraft
+            ? Task.FromResult(new AircraftSnapshot(aircraft, DateTime.UtcNow, "fake", Stale: false))
+            : throw new AircraftFeedUnavailableException("down");
+    }
+
+    public Task<AircraftState?> GetByHexAsync(string hex, CancellationToken ct) => Task.FromResult<AircraftState?>(null);
 }
 
 public class FakeAirlineCodes(params string[] codes) : IAirlineCodes

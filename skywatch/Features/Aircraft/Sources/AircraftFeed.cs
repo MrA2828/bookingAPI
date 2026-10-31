@@ -21,25 +21,27 @@ public class AircraftFeed(
 
     private readonly AircraftOptions _options = options.Value;
 
-    public async Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct)
+    public async Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct,
+        TimeSpan? maxAge = null)
     {
+        var age = maxAge ?? _options.CacheTtl;
         // "+ 0.0" turns negative zero into zero, otherwise -0.02 and 0.02 would get different cache keys.
         var centreLatitude = Math.Round(latitude, 1) + 0.0;
         var centreLongitude = Math.Round(longitude, 1) + 0.0;
         var radius = Math.Min(radiusNauticalMiles + SnapMarginNauticalMiles, MaxRadiusNauticalMiles);
         var key = string.Create(CultureInfo.InvariantCulture, $"around:{centreLatitude:0.0}:{centreLongitude:0.0}:{radius}");
 
-        if (TryGetFresh(key, out var exact)) return exact!;
-        if (TryGetFromCoveringArea(centreLatitude, centreLongitude, radius, out var covering)) return covering!;
+        if (TryGetFresh(key, age, out var exact)) return exact!;
+        if (TryGetFromCoveringArea(centreLatitude, centreLongitude, radius, age, out var covering)) return covering!;
 
-        var snapshot = await GetSnapshotAsync(key, source => source.GetAroundAsync(centreLatitude, centreLongitude, radius, ct), ct);
+        var snapshot = await GetSnapshotAsync(key, source => source.GetAroundAsync(centreLatitude, centreLongitude, radius, ct), ct, age);
         if (!snapshot.Stale) areas.Add(key, centreLatitude, centreLongitude, radius);
         return snapshot;
     }
 
     // A fresh snapshot of a larger area that contains this circle is as good as fetching it again: take the
     // aircraft inside the circle from it. Areas whose snapshot has left the cache are dropped from the index.
-    private bool TryGetFromCoveringArea(double latitude, double longitude, int radiusNauticalMiles, out AircraftSnapshot? result)
+    private bool TryGetFromCoveringArea(double latitude, double longitude, int radiusNauticalMiles, TimeSpan maxAge, out AircraftSnapshot? result)
     {
         foreach (var coveringKey in areas.FindCovering(latitude, longitude, radiusNauticalMiles))
         {
@@ -48,7 +50,7 @@ public class AircraftFeed(
                 areas.Remove(coveringKey);
                 continue;
             }
-            if (DateTime.UtcNow - snapshot.FetchedAt >= _options.CacheTtl) continue;
+            if (DateTime.UtcNow - snapshot.FetchedAt >= maxAge) continue;
 
             var radiusKm = radiusNauticalMiles * Geo.KilometresPerNauticalMile;
             result = snapshot with
@@ -69,13 +71,14 @@ public class AircraftFeed(
     }
 
     private async Task<AircraftSnapshot> GetSnapshotAsync(
-        string key, Func<IAircraftSource, Task<IReadOnlyList<AircraftState>>> fetch, CancellationToken ct)
+        string key, Func<IAircraftSource, Task<IReadOnlyList<AircraftState>>> fetch, CancellationToken ct, TimeSpan? maxAge = null)
     {
-        if (TryGetFresh(key, out var cached)) return cached!;
+        var age = maxAge ?? _options.CacheTtl;
+        if (TryGetFresh(key, age, out var cached)) return cached!;
 
         // Concurrent requests for the same key wait here; the first one fetches and the rest find it in the cache.
         using var _ = await locks.AcquireAsync(key, ct);
-        if (TryGetFresh(key, out cached)) return cached!;
+        if (TryGetFresh(key, age, out cached)) return cached!;
 
         // If every source just failed for this key, the requests that queued behind that attempt do not try again.
         var recentlyFailed = cache.TryGetValue(FailureKey(key), out Exception? lastError);
@@ -110,10 +113,10 @@ public class AircraftFeed(
 
     private static string FailureKey(string key) => $"failed:{key}";
 
-    // Returns true only for a fresh copy; "cached" is the stale copy (if any) otherwise.
-    private bool TryGetFresh(string key, out AircraftSnapshot? cached)
+    // Returns true only for a copy younger than maxAge; "cached" is the older copy (if any) otherwise.
+    private bool TryGetFresh(string key, TimeSpan maxAge, out AircraftSnapshot? cached)
     {
         cache.TryGetValue(key, out cached);
-        return cached is not null && DateTime.UtcNow - cached.FetchedAt < _options.CacheTtl;
+        return cached is not null && DateTime.UtcNow - cached.FetchedAt < maxAge;
     }
 }
