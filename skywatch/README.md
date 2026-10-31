@@ -39,6 +39,10 @@ Records that disappear from a source are marked inactive, never deleted. Check t
 - **Fallback**: if adsb.lol still fails, adsb.fi is tried; if both fail, the last snapshot (up to 10 minutes old)
   is returned with `stale: true`; with no snapshot at all the API answers 503.
 - **One call per area**: concurrent requests for the same 0.1° cell wait on a per-key lock and share one upstream call.
+- **Overlapping areas**: a request whose circle lies entirely inside a fresh cached circle (from anyone's earlier
+  request) is answered from that cache, filtered to its own circle, with no upstream call.
+- **Outages**: after every source fails for an area, requests for it within `Aircraft:FailureTtl` (5 s) get the
+  stale copy or a 503 without calling the sources again. Concurrent route lookups of one callsign share one call too.
 - **Rate limit**: `RateLimit:PermitLimit` requests per `Window` per signed-in user (per IP when anonymous).
   Over the limit the API answers 429 with a `Retry-After` header. Swagger and `/openapi` are exempt.
 
