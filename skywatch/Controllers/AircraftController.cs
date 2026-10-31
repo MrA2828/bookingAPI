@@ -17,6 +17,12 @@ public class AircraftController(ISender sender) : ControllerBase
     public async Task<ActionResult<LiveAircraftPageReturnDto>> Live([FromQuery] LiveAircraftRequestDto request, CancellationToken ct) =>
         Ok(await sender.Send(new GetLiveAircraftQuery(request), ct));
 
+    [HttpGet("in-view")]
+    [EndpointSummary("Lists live aircraft inside a map rectangle, highest first, with no 440 km limit")]
+    [EndpointDescription("Give `south`, `north`, `west` and `east` (a view that crosses the antimeridian must be split into two calls). Unlike the radius search this can cover several hundred kilometres across: the rectangle is split into circles that the sources can answer, fetched in parallel and merged, so a big view costs a few upstream calls the first time and is then served from cache. A view needing more than 20 circles (roughly 1,500 km across at mid latitudes) is rejected; zoom in. Same filters as the radius search: `kinds`, `minAltitudeFt`, `maxAltitudeFt`, `includeOnGround`. At most `limit` aircraft (default 1500, max 5000) are returned, highest altitude first; `totalCount` is how many matched. `complete` is false when part of the view could not be read from any source: the public sources throttle bursts, so the first call over a big area can miss a few circles. Calling again a few seconds later fills them in. Circles up to 30 seconds old are reused, so a wide view is less fresh than the radius search (10 seconds).")]
+    public async Task<ActionResult<AircraftInViewReturnDto>> InView([FromQuery] AircraftInViewRequestDto request, CancellationToken ct) =>
+        Ok(await sender.Send(new AircraftInViewQuery(request), ct));
+
     [HttpGet("{hex}")]
     [EndpointSummary("Gets one aircraft by its ICAO 24-bit hex address, with airline, route, planned path and estimated arrival")]
     [EndpointDescription("`hex` is the six-character transponder address (e.g. `4ca7b5`) from the list endpoint. The route (origin, destination, great-circle path, distance and estimated arrival) is looked up from the callsign and is null when the callsign is not in the route database. 404 means the aircraft is not currently being tracked.")]

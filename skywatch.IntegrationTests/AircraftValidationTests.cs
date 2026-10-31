@@ -17,6 +17,20 @@ public class AircraftValidationTests(SkyWatchFactory api)
         Assert.Equal(HttpStatusCode.BadRequest, (await api.Client.GetAsync(url)).StatusCode);
 
     [Theory]
+    [InlineData("/aircraft/in-view")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=0")]
+    [InlineData("/aircraft/in-view?south=51&north=50&west=0&east=1")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=1&east=0")]
+    [InlineData("/aircraft/in-view?south=-91&north=51&west=0&east=1")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=0&east=181")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=0&east=1&limit=0")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=0&east=1&limit=5001")]
+    [InlineData("/aircraft/in-view?south=50&north=51&west=0&east=1&kinds=spaceship")]
+    [InlineData("/aircraft/in-view?south=-60&north=70&west=-170&east=170")] // the whole world is too big
+    public async Task In_view_rejects_missing_invalid_or_oversized_views(string url) =>
+        Assert.Equal(HttpStatusCode.BadRequest, (await api.Client.GetAsync(url)).StatusCode);
+
+    [Theory]
     [InlineData("/aircraft/zzz")]
     [InlineData("/aircraft/12345")]
     [InlineData("/aircraft/1234567")]
