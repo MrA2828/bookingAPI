@@ -21,8 +21,9 @@ public class AircraftFeed(
 
     public Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct)
     {
-        var centreLatitude = Math.Round(latitude, 1);
-        var centreLongitude = Math.Round(longitude, 1);
+        // "+ 0.0" turns negative zero into zero, otherwise -0.02 and 0.02 would get different cache keys.
+        var centreLatitude = Math.Round(latitude, 1) + 0.0;
+        var centreLongitude = Math.Round(longitude, 1) + 0.0;
         var radius = Math.Min(radiusNauticalMiles + SnapMarginNauticalMiles, MaxRadiusNauticalMiles);
         var key = string.Create(CultureInfo.InvariantCulture, $"around:{centreLatitude:0.0}:{centreLongitude:0.0}:{radius}");
         return GetSnapshotAsync(key, source => source.GetAroundAsync(centreLatitude, centreLongitude, radius, ct), ct);
