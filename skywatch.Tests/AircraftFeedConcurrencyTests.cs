@@ -32,7 +32,7 @@ public class AircraftFeedConcurrencyTests
 
         // One feed per request, like the scoped registration, sharing the cache and the lock.
         var snapshots = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ =>
-            new AircraftFeed([source], cache, locks, Options.Create(new AircraftOptions()), NullLogger<AircraftFeed>.Instance)
+            new AircraftFeed([source], cache, locks, new AircraftAreaIndex(), Options.Create(new AircraftOptions()), NullLogger<AircraftFeed>.Instance)
                 .GetAroundAsync(51, 0, 50, default)));
 
         Assert.Equal(1, source.Calls);
@@ -63,7 +63,7 @@ public class AircraftFeedConcurrencyTests
 
         var results = await Task.WhenAll(Enumerable.Range(0, 10).Select(async _ =>
         {
-            var feed = new AircraftFeed([source], cache, locks, Options.Create(new AircraftOptions()), NullLogger<AircraftFeed>.Instance);
+            var feed = new AircraftFeed([source], cache, locks, new AircraftAreaIndex(), Options.Create(new AircraftOptions()), NullLogger<AircraftFeed>.Instance);
             return await Record.ExceptionAsync(() => feed.GetAroundAsync(51, 0, 50, default));
         }));
 
@@ -75,7 +75,7 @@ public class AircraftFeedConcurrencyTests
     public async Task The_sources_are_tried_again_once_the_failure_has_expired()
     {
         var source = new FailingSource();
-        var feed = new AircraftFeed([source], new MemoryCache(new MemoryCacheOptions()), new KeyedLock(),
+        var feed = new AircraftFeed([source], new MemoryCache(new MemoryCacheOptions()), new KeyedLock(), new AircraftAreaIndex(),
             Options.Create(new AircraftOptions { FailureTtl = TimeSpan.FromMilliseconds(50) }), NullLogger<AircraftFeed>.Instance);
 
         await Assert.ThrowsAsync<AircraftFeedUnavailableException>(() => feed.GetAroundAsync(51, 0, 50, default));

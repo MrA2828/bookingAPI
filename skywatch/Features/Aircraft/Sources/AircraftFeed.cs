@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using SkyWatch.Features.Aircraft.Models;
+using SkyWatch.Services;
 
 namespace SkyWatch.Features.Aircraft.Sources;
 
@@ -9,7 +10,7 @@ namespace SkyWatch.Features.Aircraft.Sources;
 // so a burst of requests for the same area costs one upstream call (a per-key lock makes the others wait for it). If every source fails, the last good
 // copy is returned flagged as stale; only when there is no copy at all does the call fail.
 public class AircraftFeed(
-    IEnumerable<IAircraftSource> sources, IMemoryCache cache, KeyedLock locks, IOptions<AircraftOptions> options,
+    IEnumerable<IAircraftSource> sources, IMemoryCache cache, KeyedLock locks, AircraftAreaIndex areas, IOptions<AircraftOptions> options,
     ILogger<AircraftFeed> logger)
     : IAircraftFeed
 {
@@ -20,14 +21,44 @@ public class AircraftFeed(
 
     private readonly AircraftOptions _options = options.Value;
 
-    public Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct)
+    public async Task<AircraftSnapshot> GetAroundAsync(double latitude, double longitude, int radiusNauticalMiles, CancellationToken ct)
     {
         // "+ 0.0" turns negative zero into zero, otherwise -0.02 and 0.02 would get different cache keys.
         var centreLatitude = Math.Round(latitude, 1) + 0.0;
         var centreLongitude = Math.Round(longitude, 1) + 0.0;
         var radius = Math.Min(radiusNauticalMiles + SnapMarginNauticalMiles, MaxRadiusNauticalMiles);
         var key = string.Create(CultureInfo.InvariantCulture, $"around:{centreLatitude:0.0}:{centreLongitude:0.0}:{radius}");
-        return GetSnapshotAsync(key, source => source.GetAroundAsync(centreLatitude, centreLongitude, radius, ct), ct);
+
+        if (TryGetFresh(key, out var exact)) return exact!;
+        if (TryGetFromCoveringArea(centreLatitude, centreLongitude, radius, out var covering)) return covering!;
+
+        var snapshot = await GetSnapshotAsync(key, source => source.GetAroundAsync(centreLatitude, centreLongitude, radius, ct), ct);
+        if (!snapshot.Stale) areas.Add(key, centreLatitude, centreLongitude, radius);
+        return snapshot;
+    }
+
+    // A fresh snapshot of a larger area that contains this circle is as good as fetching it again: take the
+    // aircraft inside the circle from it. Areas whose snapshot has left the cache are dropped from the index.
+    private bool TryGetFromCoveringArea(double latitude, double longitude, int radiusNauticalMiles, out AircraftSnapshot? result)
+    {
+        foreach (var coveringKey in areas.FindCovering(latitude, longitude, radiusNauticalMiles))
+        {
+            if (!cache.TryGetValue(coveringKey, out AircraftSnapshot? snapshot) || snapshot is null)
+            {
+                areas.Remove(coveringKey);
+                continue;
+            }
+            if (DateTime.UtcNow - snapshot.FetchedAt >= _options.CacheTtl) continue;
+
+            var radiusKm = radiusNauticalMiles * Geo.KilometresPerNauticalMile;
+            result = snapshot with
+            {
+                Aircraft = snapshot.Aircraft.Where(a => Geo.DistanceKm(latitude, longitude, a.Latitude, a.Longitude) <= radiusKm).ToList()
+            };
+            return true;
+        }
+        result = null;
+        return false;
     }
 
     public async Task<AircraftState?> GetByHexAsync(string hex, CancellationToken ct)

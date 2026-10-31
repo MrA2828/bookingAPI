@@ -107,6 +107,7 @@ builder.Services.AddHostedService<ReferenceDataSyncService>();
 builder.Services.Configure<AircraftOptions>(builder.Configuration.GetSection(AircraftOptions.Section));
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<KeyedLock>();
+builder.Services.AddSingleton<AircraftAreaIndex>();
 // Each client retries transient failures (see AircraftHttpResilience) before the feed moves on to the next source.
 builder.Services.AddHttpClient<AdsbLolSource>(ConfigureAircraftClient(o => o.AdsbLolUrl)).AddAircraftResilience();
 builder.Services.AddHttpClient<AdsbFiSource>(ConfigureAircraftClient(o => o.AdsbFiUrl)).AddAircraftResilience();
