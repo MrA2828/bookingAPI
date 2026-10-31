@@ -9,7 +9,7 @@ namespace SkyWatch.Features.Aircraft.Sources;
 // Looks a callsign up on adsbdb.com. The API rate-limits (512 requests, then a 60s block) and asks for
 // short-term caching only, so routes are cached for minutes, unknown callsigns and failures for less.
 public class AdsbdbFlightRouteProvider(
-    HttpClient http, IMemoryCache cache, IOptions<AircraftOptions> options, ILogger<AdsbdbFlightRouteProvider> logger)
+    HttpClient http, IMemoryCache cache, KeyedLock locks, IOptions<AircraftOptions> options, ILogger<AdsbdbFlightRouteProvider> logger)
     : IFlightRouteProvider
 {
     private static readonly TimeSpan FailureCacheTtl = TimeSpan.FromSeconds(30);
@@ -24,6 +24,10 @@ public class AdsbdbFlightRouteProvider(
         callsign = callsign.Trim().ToUpperInvariant();
         var key = $"route:{callsign}";
         if (cache.TryGetValue(key, out CachedRoute? cached) && cached is not null) return cached.Route;
+
+        // Concurrent lookups of one callsign wait here and then find the first one's answer in the cache.
+        using var _ = await locks.AcquireAsync(key, ct);
+        if (cache.TryGetValue(key, out cached) && cached is not null) return cached.Route;
 
         try
         {
