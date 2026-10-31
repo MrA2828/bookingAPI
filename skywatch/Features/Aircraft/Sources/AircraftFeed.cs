@@ -6,10 +6,11 @@ using SkyWatch.Features.Aircraft.Models;
 namespace SkyWatch.Features.Aircraft.Sources;
 
 // Tries the sources in registration order (adsb.lol, then adsb.fi) and keeps what they return in memory,
-// so a burst of requests for the same area costs one upstream call. If every source fails, the last good
+// so a burst of requests for the same area costs one upstream call (a per-key lock makes the others wait for it). If every source fails, the last good
 // copy is returned flagged as stale; only when there is no copy at all does the call fail.
 public class AircraftFeed(
-    IEnumerable<IAircraftSource> sources, IMemoryCache cache, IOptions<AircraftOptions> options, ILogger<AircraftFeed> logger)
+    IEnumerable<IAircraftSource> sources, IMemoryCache cache, KeyedLock locks, IOptions<AircraftOptions> options,
+    ILogger<AircraftFeed> logger)
     : IAircraftFeed
 {
     // The upstream APIs cap the search radius at 250 nautical miles.
@@ -39,9 +40,11 @@ public class AircraftFeed(
     private async Task<AircraftSnapshot> GetSnapshotAsync(
         string key, Func<IAircraftSource, Task<IReadOnlyList<AircraftState>>> fetch, CancellationToken ct)
     {
-        cache.TryGetValue(key, out AircraftSnapshot? cached);
-        if (cached is not null && DateTime.UtcNow - cached.FetchedAt < _options.CacheTtl)
-            return cached;
+        if (TryGetFresh(key, out var cached)) return cached!;
+
+        // Concurrent requests for the same key wait here; the first one fetches and the rest find it in the cache.
+        using var _ = await locks.AcquireAsync(key, ct);
+        if (TryGetFresh(key, out cached)) return cached!;
 
         Exception? lastError = null;
         foreach (var source in sources)
@@ -70,5 +73,12 @@ public class AircraftFeed(
             return cached with { Stale = true };
         }
         throw new AircraftFeedUnavailableException("No live aircraft source is reachable right now", lastError);
+    }
+
+    // Returns true only for a fresh copy; "cached" is the stale copy (if any) otherwise.
+    private bool TryGetFresh(string key, out AircraftSnapshot? cached)
+    {
+        cache.TryGetValue(key, out cached);
+        return cached is not null && DateTime.UtcNow - cached.FetchedAt < _options.CacheTtl;
     }
 }

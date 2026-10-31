@@ -11,7 +11,7 @@ public class AircraftFeedTests
     private static readonly IReadOnlyList<AircraftState> OnePlane = [TestAircraft.Make()];
 
     private static AircraftFeed Feed(AircraftOptions options, params IAircraftSource[] sources) =>
-        new(sources, new MemoryCache(new MemoryCacheOptions()), Options.Create(options), NullLogger<AircraftFeed>.Instance);
+        new(sources, new MemoryCache(new MemoryCacheOptions()), new KeyedLock(), Options.Create(options), NullLogger<AircraftFeed>.Instance);
 
     private static IReadOnlyList<AircraftState> Boom() => throw new HttpRequestException("down");
 
